@@ -84,6 +84,7 @@ def plot_count_rate(detector, shot_number, tofor_times, width):
     plt.figure(detector)
     plt.plot(tofu_bins-40, tofu_rate/tofu_rate.max(), 'k-', label='TOFu')
     plt.plot(tofor_bins-40, tofor_rate/tofor_rate.max(), 'C0-', label='Old DAQ')
+    plt.plot(kn1_bins-40, kn1_rate/kn1_rate.max(), 'C1-', label='KN1')
     
     # Configure plot
     plt.xlabel('$t_{JET}$ (s)')
@@ -94,15 +95,26 @@ def plot_count_rate(detector, shot_number, tofor_times, width):
     plt.title(f'{detector.replace("_", "-")}', loc='right')
     plt.legend()
 
-def main():
+def main(plot_all):
     shot_number = 98044
     
     # Import time stamps for all TOFOR detectors
     tofor_times = import_tofor(shot_number)
 
-    plot_count_rate('S1_01', shot_number, tofor_times, 0.006)
-    plot_count_rate('S2_01', shot_number, tofor_times, 0.1)
+    # All detectors
+    if plot_all:
+        detectors = dfs.get_dictionaries('merged')
+        for detector in detectors:
+            if detector[0:2]=='S1': width = 0.006
+            else: width = 0.1
+            plot_count_rate(detector, shot_number, tofor_times, width)
+    
+    # Detectors for paper
+    else:
+        plot_count_rate('S1_01', shot_number, tofor_times, 0.006)
+        plot_count_rate('S2_01', shot_number, tofor_times, 0.1)
     
 if __name__=='__main__':
-    main()
+    main(plot_all=True)
+    
     
