@@ -70,6 +70,11 @@ def count_rate(time_stamps, width):
 
     return time_centres, count_rate
 
+def normalize(count_rate):
+    """Normalize to integral under count rate."""
+    return count_rate/np.trapz(count_rate)
+    
+
 def plot_count_rate(detector, shot_number, tofor_times, width):
     # Import TOFu time stamps
     tofu_times = import_tofu(detector, shot_number)
@@ -82,16 +87,22 @@ def plot_count_rate(detector, shot_number, tofor_times, width):
     # Plot count rates
     # ----------------
     plt.figure(detector)
-    plt.plot(tofu_bins-40, tofu_rate/tofu_rate.max(), 'k-', label='TOFu')
-    plt.plot(tofor_bins-40, tofor_rate/tofor_rate.max(), 'C0-', label='Old DAQ')
-    plt.plot(kn1_bins-40, kn1_rate/kn1_rate.max(), 'C1-', label='KN1')
+    
+    tofu_n = np.trapz(tofu_rate)
+    tofor_n = np.trapz(tofor_rate)
+    kn1_n = np.trapz(kn1_rate)
+    
+    plt.plot(tofu_bins-40, tofu_rate * (kn1_n/tofu_n), 'k-', label='TOFu')
+    plt.plot(tofor_bins-40, tofor_rate * (kn1_n/tofor_n), 'C0-', 
+             label='Original DAQ')
+    plt.plot(kn1_bins-40, kn1_rate, 'C1-', 
+             label='Fission chambers')
     
     # Configure plot
     plt.xlabel('$t_{JET}$ (s)')
     plt.ylabel('$R_n$ $(s^{-1})$')
     plt.xlim(6, 18)
-    plt.ylim(0, 1.05)
-    plt.title(f'JPN {shot_number}', loc='left')
+    plt.title(f'JPN {shot_number}')
     plt.title(f'{detector.replace("_", "-")}', loc='right')
     plt.legend()
 
@@ -115,6 +126,6 @@ def main(plot_all):
         plot_count_rate('S2_01', shot_number, tofor_times, 0.1)
     
 if __name__=='__main__':
-    main(plot_all=True)
+    main(plot_all=False)
     
     
