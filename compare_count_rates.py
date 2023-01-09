@@ -18,6 +18,8 @@ import useful_defs as udfs
 import ppf
 import matplotlib.pyplot as plt
 udfs.set_nes_plot_style()
+
+
 def import_tofu(detector, shot_number):
     '''
     Return TOFu time stamps
@@ -87,27 +89,46 @@ def plot_count_rate(detector, shot_number, tofor_times, width):
     # Plot count rates
     # ----------------
     plt.figure(detector)
+    ax1 = plt.gca()
+    ax2 = ax1.twinx()
     
-    tofu_n = np.trapz(tofu_rate)
-    tofor_n = np.trapz(tofor_rate)
-    kn1_n = np.trapz(kn1_rate)
+    # Normalization constants
+    tofu_mask = (tofu_bins > 40+8) & (tofu_bins < 40+13)
+    tofor_mask = (tofor_bins > 40+8) & (tofor_bins < 40+13)
+    tofu_n = np.trapz(tofu_rate[tofu_mask], dx=width)
+    tofor_n = np.trapz(tofor_rate[tofor_mask], dx=width)
+    kn1_n = np.trapz(kn1_rate, dx=width)
+    print(f'TOFu/TOFOR {detector}: {tofu_n/tofor_n:.2f}')
     
-    plt.plot(tofu_bins-40, tofu_rate * (kn1_n/tofu_n), 'k-', label='TOFu')
-    plt.plot(tofor_bins-40, tofor_rate * (kn1_n/tofor_n), 'C0-', 
-             label='Original DAQ')
-    plt.plot(kn1_bins-40, kn1_rate, 'C1-', 
-             label='Fission chambers')
+    # Plot lines
+    line_0 = ax2.plot(kn1_bins-40, kn1_rate, 'C1-', label='Fission chambers')
+    line_1 = ax1.plot(tofu_bins-40, tofu_rate, 'k-', label='TOFu', zorder=2)
+    line_2 = ax1.plot(tofor_bins-40, tofor_rate, linestyle='-', 
+                      label='Original DAQ', zorder=1, color='0.5')
     
     # Configure plot
-    plt.xlabel('$t_{JET}$ (s)')
-    plt.ylabel('$R_n$ $(s^{-1})$')
-    plt.xlim(6, 18)
+    ax1.set_xlabel('$t_{JET}$ (s)')
+    ax1.set_ylabel('Counts/s')
+    ax2.set_ylabel('$R_n$ $(s^{-1})$', color='C1')
+
+    # Put ax1 in front of ax2
+    ax1.set_zorder(ax2.get_zorder() + 1) 
+    ax1.patch.set_visible(False)
+    ax2.patch.set_visible(True)
+    
+    plt.xlim(7, 14)
+    ax2.set_ylim(top=2.6E16)
     plt.title(f'JPN {shot_number}')
-    plt.title(f'{detector.replace("_", "-")}', loc='right')
-    plt.legend()
+    
+    # Add legend
+    lines = line_1 + line_2 + line_0
+    labels = [line.get_label() for line in lines]
+    ax1.legend(lines, labels)
+
 
 def main(plot_all):
-    shot_number = 98044
+#    shot_number = 98044
+    shot_number = 98005
     
     # Import time stamps for all TOFOR detectors
     tofor_times = import_tofor(shot_number)
@@ -126,6 +147,6 @@ def main(plot_all):
         plot_count_rate('S2_01', shot_number, tofor_times, 0.1)
     
 if __name__=='__main__':
-    main(plot_all=False)
+    main(plot_all=True)
     
     
